@@ -1,9 +1,58 @@
 ---
-- name: Deploy ForenSecure
-  hosts: local
+- name: Deploy ForenSecure Application
+  hosts: "{{ target_hosts | default('local') }}"
+  become: "{{ ansible_become | default(false) }}"
   vars:
-    image_tag: "latest"
+    docker_image: "{{ docker_image | default('ghcr.io/forensecure:main') }}"
+    app_port: "{{ app_port | default(8501) }}"
+    container_name: forensecure-app
+  
   tasks:
-    - name: Show deployment info
+    - name: Display deployment information
       debug:
-        msg: "Deploying forensecure:{{ image_tag }}"
+        msg: |
+          Deploying ForenSecure
+          Image: {{ docker_image }}
+          Port: {{ app_port }}
+          Container: {{ container_name }}
+
+    - name: Pull the latest Docker image
+      command: "docker pull {{ docker_image }}"
+      register: docker_pull_result
+      failed_when: docker_pull_result.rc != 0
+      ignore_errors: true
+
+    - name: Stop existing container if running
+      command: "docker stop {{ container_name }}"
+      ignore_errors: true
+      register: stop_result
+      changed_when: stop_result.rc == 0
+
+    - name: Remove existing container
+      command: "docker rm {{ container_name }}"
+      ignore_errors: true
+      register: rm_result
+      changed_when: rm_result.rc == 0
+
+    - name: Run Docker container
+      command: >
+        docker run -d 
+        --name {{ container_name }}
+        -p {{ app_port }}:8501
+        -v /tmp/forensecure-data:/app/cyber/data
+        -e TZ=UTC
+        {{ docker_image }}
+      register: container_result
+
+    - name: Wait for container to be healthy
+      pause:
+        seconds: 5
+
+    - name: Check if container is running
+      command: "docker ps -q -f name={{ container_name }}"
+      register: container_check
+      failed_when: container_check.stdout == ''
+
+    - name: Display deployment success
+      debug:
+        msg: "ForenSecure has been successfully deployed on port {{ app_port }}"

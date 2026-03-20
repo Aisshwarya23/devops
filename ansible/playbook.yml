@@ -1,0 +1,9 @@
+---
+- name: Deploy ForenSecure
+  hosts: local
+  vars:
+    image_tag: "latest"
+  tasks:
+    - name: Show deployment info
+      debug:
+        msg: "Deploying forensecure:{{ image_tag }}"

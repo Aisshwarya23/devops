@@ -1,19 +1,13 @@
-FROM python:3.11.5-slim
+FROM python:3.11-slim
 
-RUN useradd -m appuser
+WORKDIR /app
 
-WORKDIR /home/appuser/app
-
-# Copy requirements from cyber folder
-COPY cyber/requirements.txt .
-
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy full cyber folder
-COPY cyber ./cyber
+COPY . .
 
-RUN chown -R appuser:appuser /home/appuser/app
-
+RUN useradd -m appuser
 USER appuser
 
 EXPOSE 8501

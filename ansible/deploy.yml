@@ -1,1 +1,0 @@
-ansible-playbook ansible/deploy.yml -i inventory
